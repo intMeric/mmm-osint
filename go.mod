@@ -3,14 +3,15 @@ module mmm-osint
 go 1.23.0
 
 require (
+	github.com/go-redis/redismock/v9 v9.2.0
 	github.com/gocolly/colly/v2 v2.2.0
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
+	github.com/intMeric/pii-extractor v0.1.1
 	github.com/jdkato/prose/v2 v2.0.0
 	github.com/onsi/ginkgo/v2 v2.23.4
 	github.com/onsi/gomega v1.36.3
 	github.com/redis/go-redis/v9 v9.11.0
-	github.com/stretchr/testify v1.10.0
 )
 
 require (
@@ -33,14 +34,12 @@ require (
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.27.0 // indirect
-	github.com/go-redis/redismock/v9 v9.2.0 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/pprof v0.0.0-20250403155104-27863c87afa6 // indirect
-	github.com/intMeric/pii-extractor v0.1.1 // indirect
 	github.com/invopop/jsonschema v0.13.0 // indirect
 	github.com/kennygrant/sanitize v1.2.4 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
@@ -51,6 +50,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
+	github.com/stretchr/testify v1.10.0 // indirect
 	github.com/teilomillet/gollm v0.1.9 // indirect
 	github.com/temoto/robotstxt v1.1.2 // indirect
 	github.com/wk8/go-ordered-map/v2 v2.1.8 // indirect

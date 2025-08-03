@@ -17,7 +17,61 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Run all tests: `go test -v ./...`
 - Run specific package tests: `go test -v ./internal/app/web-page`
 - Run tests with coverage: `go test -v -cover ./...`
-- Tests use Ginkgo BDD framework with Testify assertions
+- Tests use Ginkgo BDD framework with Gomega assertions
+
+### Test Example Structure
+
+All tests must follow the Ginkgo BDD pattern with Gomega assertions:
+
+```go
+package mypackage_test
+
+import (
+    "context"
+    . "github.com/onsi/ginkgo/v2"
+    . "github.com/onsi/gomega"
+    "mmm-osint/internal/pkg/mypackage"
+)
+
+var _ = Describe("MyComponent", func() {
+    var (
+        component mypackage.Interface
+        ctx       context.Context
+    )
+
+    BeforeEach(func() {
+        component = mypackage.New()
+        ctx = context.Background()
+    })
+
+    AfterEach(func() {
+        if component != nil {
+            component.Close()
+        }
+    })
+
+    Describe("MethodName", func() {
+        Context("with valid input", func() {
+            It("should return expected result", func() {
+                result, err := component.MethodName(ctx, "input")
+                
+                Expect(err).NotTo(HaveOccurred())
+                Expect(result).NotTo(BeEmpty())
+                Expect(result).To(ContainSubstring("expected"))
+            })
+        })
+
+        Context("with invalid input", func() {
+            It("should handle errors gracefully", func() {
+                result, err := component.MethodName(ctx, "")
+                
+                Expect(err).To(HaveOccurred())
+                Expect(result).To(BeEmpty())
+            })
+        })
+    })
+})
+```
 
 ## Building
 
@@ -45,7 +99,7 @@ This is a Go-based OSINT (Open Source Intelligence) toolkit with a modular archi
 - Supports comprehensive data extraction: HTML, text, links, images, forms, scripts, meta tags
 - Configurable scraping options: timeouts, user agents, rate limiting, selective extraction
 - Factory pattern for scraper instantiation
-- BDD-style tests using Ginkgo and Testify
+- BDD-style tests using Ginkgo and Gomega
 
 **Caching System (`internal/pkg/cache/`)**
 
@@ -90,12 +144,12 @@ Key external dependencies:
 - `github.com/hashicorp/golang-lru/v2`: LRU cache implementation
 - `github.com/jdkato/prose/v2`: Natural language processing for keyword extraction
 - `github.com/intMeric/pii-extractor`: PII detection and extraction
-- `github.com/onsi/ginkgo/v2` + `github.com/stretchr/testify`: BDD testing framework
+- `github.com/onsi/ginkgo/v2` + `github.com/onsi/gomega`: BDD testing framework
 
 ### Testing Strategy
 
 - BDD-style tests using Ginkgo's Describe/Context/It structure
-- Testify assertions for readable test expectations
+- Gomega assertions for readable test expectations
 - Mock HTTP servers for web scraping tests
 - Test coverage includes timeout handling, error scenarios, and configuration options
 

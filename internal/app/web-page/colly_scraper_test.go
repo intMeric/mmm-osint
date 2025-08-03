@@ -10,8 +10,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestCollyScraper(t *testing.T) {
@@ -42,7 +40,7 @@ var _ = Describe("CollyScraper", func() {
 			BeforeEach(func() {
 				var err error
 				mockHTML, err = os.ReadFile("mock/testing-web-page.html")
-				require.NoError(GinkgoT(), err, "Failed to read mock HTML file")
+				Expect(err).NotTo(HaveOccurred(), "Failed to read mock HTML file")
 
 				server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -63,56 +61,56 @@ var _ = Describe("CollyScraper", func() {
 
 			It("should extract basic page information", func() {
 				result, err := scraper.Scrape(ctx, server.URL, options)
-				require.NoError(GinkgoT(), err)
+				Expect(err).NotTo(HaveOccurred())
 
-				assert.Equal(GinkgoT(), server.URL, result.URL)
-				assert.Equal(GinkgoT(), 200, result.StatusCode)
+				Expect(result.URL).To(Equal(server.URL))
+				Expect(result.StatusCode).To(Equal(200))
 			})
 
 			It("should extract the correct title", func() {
 				result, err := scraper.Scrape(ctx, server.URL, options)
-				require.NoError(GinkgoT(), err)
+				Expect(err).NotTo(HaveOccurred())
 
 				expectedTitle := "Meteo Lille (59000) - Nord : Prévisions Meteo GRATUITE à 15 jours - La Chaîne Météo"
-				assert.Equal(GinkgoT(), expectedTitle, result.Title)
+				Expect(result.Title).To(Equal(expectedTitle))
 			})
 
 			It("should extract HTML body content", func() {
 				result, err := scraper.Scrape(ctx, server.URL, options)
-				require.NoError(GinkgoT(), err)
+				Expect(err).NotTo(HaveOccurred())
 
-				assert.NotEmpty(GinkgoT(), result.HTMLBody)
-				assert.Contains(GinkgoT(), result.HTMLBody, "<!DOCTYPE html>")
+				Expect(result.HTMLBody).NotTo(BeEmpty())
+				Expect(result.HTMLBody).To(ContainSubstring("<!DOCTYPE html>"))
 			})
 
 			It("should extract meta tags", func() {
 				result, err := scraper.Scrape(ctx, server.URL, options)
-				require.NoError(GinkgoT(), err)
+				Expect(err).NotTo(HaveOccurred())
 
-				assert.NotEmpty(GinkgoT(), result.MetaTags)
-				assert.NotEmpty(GinkgoT(), result.MetaTags["description"])
-				assert.NotEmpty(GinkgoT(), result.MetaTags["og:title"])
+				Expect(result.MetaTags).NotTo(BeEmpty())
+				Expect(result.MetaTags["description"]).NotTo(BeEmpty())
+				Expect(result.MetaTags["og:title"]).NotTo(BeEmpty())
 			})
 
 			It("should extract links", func() {
 				result, err := scraper.Scrape(ctx, server.URL, options)
-				require.NoError(GinkgoT(), err)
+				Expect(err).NotTo(HaveOccurred())
 
-				assert.NotEmpty(GinkgoT(), result.Links)
+				Expect(result.Links).NotTo(BeEmpty())
 			})
 
 			It("should extract text content", func() {
 				result, err := scraper.Scrape(ctx, server.URL, options)
-				require.NoError(GinkgoT(), err)
+				Expect(err).NotTo(HaveOccurred())
 
-				assert.NotEmpty(GinkgoT(), result.Text)
+				Expect(result.Text).NotTo(BeEmpty())
 			})
 
 			It("should set scraped timestamp", func() {
 				result, err := scraper.Scrape(ctx, server.URL, options)
-				require.NoError(GinkgoT(), err)
+				Expect(err).NotTo(HaveOccurred())
 
-				assert.False(GinkgoT(), result.ScrapedAt.IsZero())
+				Expect(result.ScrapedAt.IsZero()).To(BeFalse())
 			})
 		})
 
@@ -157,7 +155,7 @@ var _ = Describe("CollyScraper", func() {
 				_, err := scraper.Scrape(ctx, slowServer.URL, options)
 
 				Expect(err).To(HaveOccurred())
-				assert.Contains(GinkgoT(), err.Error(), "timeout")
+				Expect(err.Error()).To(ContainSubstring("timeout"))
 			})
 		})
 	})
@@ -207,9 +205,9 @@ var _ = Describe("CollyScraper", func() {
 				results, err := scraper.ScrapeMultiple(ctx, urls, options)
 
 				Expect(err).ToNot(HaveOccurred())
-				assert.Len(GinkgoT(), results, 2)
-				assert.Equal(GinkgoT(), "Page 1", results[0].Title)
-				assert.Equal(GinkgoT(), "Page 2", results[1].Title)
+				Expect(results).To(HaveLen(2))
+				Expect(results[0].Title).To(Equal("Page 1"))
+				Expect(results[1].Title).To(Equal("Page 2"))
 			})
 		})
 	})
@@ -258,15 +256,15 @@ var _ = Describe("CollyScraper", func() {
 
 			It("should extract only selected content types", func() {
 				result, err := scraper.Scrape(ctx, server.URL, options)
-				require.NoError(GinkgoT(), err)
+				Expect(err).NotTo(HaveOccurred())
 
-				assert.NotEmpty(GinkgoT(), result.HTMLBody, "HTMLBody should be extracted")
-				assert.NotEmpty(GinkgoT(), result.MetaTags, "MetaTags should be extracted")
+				Expect(result.HTMLBody).NotTo(BeEmpty(), "HTMLBody should be extracted")
+				Expect(result.MetaTags).NotTo(BeEmpty(), "MetaTags should be extracted")
 
-				assert.Empty(GinkgoT(), result.Text, "Text should not be extracted when ExtractText is false")
-				assert.Empty(GinkgoT(), result.Links, "Links should not be extracted when ExtractLinks is false")
-				assert.Empty(GinkgoT(), result.Images, "Images should not be extracted when ExtractImages is false")
-				assert.Empty(GinkgoT(), result.Scripts, "Scripts should not be extracted when ExtractScripts is false")
+				Expect(result.Text).To(BeEmpty(), "Text should not be extracted when ExtractText is false")
+				Expect(result.Links).To(BeEmpty(), "Links should not be extracted when ExtractLinks is false")
+				Expect(result.Images).To(BeEmpty(), "Images should not be extracted when ExtractImages is false")
+				Expect(result.Scripts).To(BeEmpty(), "Scripts should not be extracted when ExtractScripts is false")
 			})
 		})
 	})
@@ -275,14 +273,14 @@ var _ = Describe("CollyScraper", func() {
 		It("should have correct default values", func() {
 			defaultOptions := DefaultScrapingOptions()
 
-			assert.Equal(GinkgoT(), 30*time.Second, defaultOptions.Timeout)
-			assert.True(GinkgoT(), defaultOptions.ExtractText)
-			assert.True(GinkgoT(), defaultOptions.ExtractHTML)
-			assert.True(GinkgoT(), defaultOptions.ExtractLinks)
-			assert.True(GinkgoT(), defaultOptions.ExtractImages)
-			assert.True(GinkgoT(), defaultOptions.ExtractForms)
-			assert.True(GinkgoT(), defaultOptions.ExtractScripts)
-			assert.True(GinkgoT(), defaultOptions.ExtractMeta)
+			Expect(defaultOptions.Timeout).To(Equal(30 * time.Second))
+			Expect(defaultOptions.ExtractText).To(BeTrue())
+			Expect(defaultOptions.ExtractHTML).To(BeTrue())
+			Expect(defaultOptions.ExtractLinks).To(BeTrue())
+			Expect(defaultOptions.ExtractImages).To(BeTrue())
+			Expect(defaultOptions.ExtractForms).To(BeTrue())
+			Expect(defaultOptions.ExtractScripts).To(BeTrue())
+			Expect(defaultOptions.ExtractMeta).To(BeTrue())
 		})
 	})
 
@@ -292,7 +290,7 @@ var _ = Describe("CollyScraper", func() {
 				customUA := "Custom-Bot/2.0"
 				scraper.SetUserAgent(customUA)
 
-				assert.Equal(GinkgoT(), customUA, scraper.userAgent)
+				Expect(scraper.userAgent).To(Equal(customUA))
 			})
 		})
 
@@ -301,7 +299,7 @@ var _ = Describe("CollyScraper", func() {
 				customTimeout := 45 * time.Second
 				scraper.SetTimeout(customTimeout)
 
-				assert.Equal(GinkgoT(), customTimeout, scraper.timeout)
+				Expect(scraper.timeout).To(Equal(customTimeout))
 			})
 		})
 	})
