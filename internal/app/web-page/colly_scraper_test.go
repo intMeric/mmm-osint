@@ -5,325 +5,304 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"strings"
 	"testing"
 	"time"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestCollyScraper_Scrape(t *testing.T) {
-	// Read the mock HTML file
-	mockHTML, err := os.ReadFile("mock/testing-web-page.html")
-	if err != nil {
-		t.Fatalf("Failed to read mock HTML file: %v", err)
-	}
-
-	// Create a test server with the mock HTML
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.WriteHeader(http.StatusOK)
-		w.Write(mockHTML)
-	}))
-	defer server.Close()
-
-	scraper := NewCollyScraper()
-	ctx := context.Background()
-	options := DefaultScrapingOptions()
-
-	result, err := scraper.Scrape(ctx, server.URL, options)
-	if err != nil {
-		t.Fatalf("Scrape failed: %v", err)
-	}
-
-	// Test basic fields
-	if result.URL != server.URL {
-		t.Errorf("Expected URL %s, got %s", server.URL, result.URL)
-	}
-
-	if result.StatusCode != 200 {
-		t.Errorf("Expected status code 200, got %d", result.StatusCode)
-	}
-
-	// Test title extraction
-	expectedTitle := "Meteo Lille (59000) - Nord : Prévisions Meteo GRATUITE à 15 jours - La Chaîne Météo"
-	if result.Title != expectedTitle {
-		t.Errorf("Expected title '%s', got '%s'", expectedTitle, result.Title)
-	}
-
-	// Test HTML body extraction
-	if result.HTMLBody == "" {
-		t.Error("HTMLBody should not be empty")
-	}
-
-	if !strings.Contains(result.HTMLBody, "<!DOCTYPE html>") {
-		t.Error("HTMLBody should contain DOCTYPE declaration")
-	}
-
-	// Test meta tags extraction
-	if len(result.MetaTags) == 0 {
-		t.Error("MetaTags should not be empty")
-	}
-
-	// Check specific meta tags
-	if result.MetaTags["description"] == "" {
-		t.Error("Description meta tag should be extracted")
-	}
-
-	if result.MetaTags["og:title"] == "" {
-		t.Error("OpenGraph title should be extracted")
-	}
-
-	// Test links extraction
-	if len(result.Links) == 0 {
-		t.Error("Links should be extracted")
-	}
-
-	// Test that we have some links (not necessarily canonical since it's in <link> tag, not <a>)
-	// Note: canonical links are in <link> tags which are not extracted as Links but as stylesheets/scripts
-	if len(result.Links) < 5 { // Should have plenty of links in the weather page
-		t.Logf("Only found %d links, expected more", len(result.Links))
-	}
-
-	// Test text extraction
-	if result.Text == "" {
-		t.Error("Text should not be empty")
-	}
-
-	// Test timestamps
-	if result.ScrapedAt.IsZero() {
-		t.Error("ScrapedAt timestamp should be set")
-	}
+func TestCollyScraper(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "CollyScraper Suite")
 }
 
-func TestCollyScraper_ScrapeMultiple(t *testing.T) {
-	// Create multiple test servers
-	server1 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/html")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("<html><head><title>Page 1</title></head><body><h1>Hello Page 1</h1></body></html>"))
-	}))
-	defer server1.Close()
+var _ = Describe("CollyScraper", func() {
+	var (
+		scraper *CollyScraper
+		ctx     context.Context
+		options *ScrapingOptions
+	)
 
-	server2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/html")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("<html><head><title>Page 2</title></head><body><h1>Hello Page 2</h1></body></html>"))
-	}))
-	defer server2.Close()
+	BeforeEach(func() {
+		scraper = NewCollyScraper()
+		ctx = context.Background()
+		options = DefaultScrapingOptions()
+	})
 
-	scraper := NewCollyScraper()
-	ctx := context.Background()
-	options := &ScrapingOptions{
-		Timeout:         5 * time.Second,
-		UserAgent:       "Test-Bot/1.0",
-		RateLimitDelay:  100 * time.Millisecond,
-		ExtractText:     true,
-		ExtractHTML:     true,
-		ExtractLinks:    true,
-		ExtractImages:   true,
-		ExtractForms:    true,
-		ExtractScripts:  true,
-		ExtractMeta:     true,
-		FollowRedirects: true,
-	}
+	Describe("Scrape", func() {
+		Context("when scraping a mock HTML page", func() {
+			var (
+				server   *httptest.Server
+				mockHTML []byte
+			)
 
-	urls := []string{server1.URL, server2.URL}
-	results, err := scraper.ScrapeMultiple(ctx, urls, options)
+			BeforeEach(func() {
+				var err error
+				mockHTML, err = os.ReadFile("mock/testing-web-page.html")
+				require.NoError(GinkgoT(), err, "Failed to read mock HTML file")
 
-	if err != nil {
-		t.Fatalf("ScrapeMultiple failed: %v", err)
-	}
+				server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.Header().Set("Content-Type", "text/html; charset=utf-8")
+					w.WriteHeader(http.StatusOK)
+					w.Write(mockHTML)
+				}))
+			})
 
-	if len(results) != 2 {
-		t.Errorf("Expected 2 results, got %d", len(results))
-	}
+			AfterEach(func() {
+				server.Close()
+			})
 
-	// Test first result
-	if results[0].Title != "Page 1" {
-		t.Errorf("Expected title 'Page 1', got '%s'", results[0].Title)
-	}
+			It("should successfully scrape the page", func() {
+				result, err := scraper.Scrape(ctx, server.URL, options)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(result).ToNot(BeNil())
+			})
 
-	// Test second result
-	if results[1].Title != "Page 2" {
-		t.Errorf("Expected title 'Page 2', got '%s'", results[1].Title)
-	}
-}
+			It("should extract basic page information", func() {
+				result, err := scraper.Scrape(ctx, server.URL, options)
+				require.NoError(GinkgoT(), err)
 
-func TestCollyScraper_ScrapingOptions(t *testing.T) {
-	// Test with different options
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/html")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`
-			<html>
-				<head>
-					<title>Test Page</title>
-					<meta name="description" content="Test description">
-				</head>
-				<body>
-					<h1>Test Content</h1>
-					<a href="/link1">Link 1</a>
-					<img src="/image1.jpg" alt="Image 1">
-					<script src="/script1.js"></script>
-				</body>
-			</html>
-		`))
-	}))
-	defer server.Close()
+				assert.Equal(GinkgoT(), server.URL, result.URL)
+				assert.Equal(GinkgoT(), 200, result.StatusCode)
+			})
 
-	scraper := NewCollyScraper()
-	ctx := context.Background()
+			It("should extract the correct title", func() {
+				result, err := scraper.Scrape(ctx, server.URL, options)
+				require.NoError(GinkgoT(), err)
 
-	// Test with selective extraction
-	options := &ScrapingOptions{
-		Timeout:         5 * time.Second,
-		UserAgent:       "Test-Bot/1.0",
-		ExtractText:     false,
-		ExtractHTML:     true,
-		ExtractLinks:    false,
-		ExtractImages:   false,
-		ExtractForms:    false,
-		ExtractScripts:  false,
-		ExtractMeta:     true,
-		FollowRedirects: true,
-	}
+				expectedTitle := "Meteo Lille (59000) - Nord : Prévisions Meteo GRATUITE à 15 jours - La Chaîne Météo"
+				assert.Equal(GinkgoT(), expectedTitle, result.Title)
+			})
 
-	result, err := scraper.Scrape(ctx, server.URL, options)
-	if err != nil {
-		t.Fatalf("Scrape failed: %v", err)
-	}
+			It("should extract HTML body content", func() {
+				result, err := scraper.Scrape(ctx, server.URL, options)
+				require.NoError(GinkgoT(), err)
 
-	// Should have HTML and meta tags
-	if result.HTMLBody == "" {
-		t.Error("HTMLBody should be extracted")
-	}
+				assert.NotEmpty(GinkgoT(), result.HTMLBody)
+				assert.Contains(GinkgoT(), result.HTMLBody, "<!DOCTYPE html>")
+			})
 
-	if len(result.MetaTags) == 0 {
-		t.Error("MetaTags should be extracted")
-	}
+			It("should extract meta tags", func() {
+				result, err := scraper.Scrape(ctx, server.URL, options)
+				require.NoError(GinkgoT(), err)
 
-	// Should NOT have text, links, images, scripts
-	if result.Text != "" {
-		t.Error("Text should not be extracted when ExtractText is false")
-	}
+				assert.NotEmpty(GinkgoT(), result.MetaTags)
+				assert.NotEmpty(GinkgoT(), result.MetaTags["description"])
+				assert.NotEmpty(GinkgoT(), result.MetaTags["og:title"])
+			})
 
-	if len(result.Links) > 0 {
-		t.Error("Links should not be extracted when ExtractLinks is false")
-	}
+			It("should extract links", func() {
+				result, err := scraper.Scrape(ctx, server.URL, options)
+				require.NoError(GinkgoT(), err)
 
-	if len(result.Images) > 0 {
-		t.Error("Images should not be extracted when ExtractImages is false")
-	}
+				assert.NotEmpty(GinkgoT(), result.Links)
+			})
 
-	if len(result.Scripts) > 0 {
-		t.Error("Scripts should not be extracted when ExtractScripts is false")
-	}
-}
+			It("should extract text content", func() {
+				result, err := scraper.Scrape(ctx, server.URL, options)
+				require.NoError(GinkgoT(), err)
 
-func TestCollyScraper_ErrorHandling(t *testing.T) {
-	scraper := NewCollyScraper()
-	ctx := context.Background()
-	options := DefaultScrapingOptions()
+				assert.NotEmpty(GinkgoT(), result.Text)
+			})
 
-	// Test invalid URL
-	result, err := scraper.Scrape(ctx, "http://invalid-url-that-does-not-exist.local", options)
-	if err == nil {
-		t.Error("Expected error for invalid URL")
-	}
+			It("should set scraped timestamp", func() {
+				result, err := scraper.Scrape(ctx, server.URL, options)
+				require.NoError(GinkgoT(), err)
 
-	// Result should still be returned with error info
-	if result == nil {
-		t.Error("Result should not be nil even on error")
-	}
-}
+				assert.False(GinkgoT(), result.ScrapedAt.IsZero())
+			})
+		})
 
-func TestCollyScraper_Timeout(t *testing.T) {
-	// Create a server that delays response
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(2 * time.Second)
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("<html><head><title>Slow Page</title></head><body>Content</body></html>"))
-	}))
-	defer server.Close()
+		Context("when handling errors", func() {
+			It("should handle invalid URLs gracefully", func() {
+				result, err := scraper.Scrape(ctx, "http://invalid-url-that-does-not-exist.local", options)
 
-	scraper := NewCollyScraper()
-	ctx := context.Background()
-	options := &ScrapingOptions{
-		Timeout:         500 * time.Millisecond, // Short timeout
-		UserAgent:       "Test-Bot/1.0",
-		ExtractText:     true,
-		ExtractHTML:     true,
-		ExtractLinks:    true,
-		ExtractImages:   true,
-		ExtractForms:    true,
-		ExtractScripts:  true,
-		ExtractMeta:     true,
-		FollowRedirects: true,
-	}
+				Expect(err).To(HaveOccurred())
+				Expect(result).ToNot(BeNil())
+			})
+		})
 
-	_, err := scraper.Scrape(ctx, server.URL, options)
-	if err == nil {
-		t.Error("Expected timeout error")
-	}
+		Context("when testing timeouts", func() {
+			var slowServer *httptest.Server
 
-	if !strings.Contains(err.Error(), "timeout") {
-		t.Errorf("Expected timeout error, got: %v", err)
-	}
-}
+			BeforeEach(func() {
+				slowServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					time.Sleep(2 * time.Second)
+					w.WriteHeader(http.StatusOK)
+					w.Write([]byte("<html><head><title>Slow Page</title></head><body>Content</body></html>"))
+				}))
 
-func TestDefaultScrapingOptions(t *testing.T) {
-	options := DefaultScrapingOptions()
+				options = &ScrapingOptions{
+					Timeout:         500 * time.Millisecond,
+					UserAgent:       "Test-Bot/1.0",
+					ExtractText:     true,
+					ExtractHTML:     true,
+					ExtractLinks:    true,
+					ExtractImages:   true,
+					ExtractForms:    true,
+					ExtractScripts:  true,
+					ExtractMeta:     true,
+					FollowRedirects: true,
+				}
+			})
 
-	if options.Timeout != 30*time.Second {
-		t.Errorf("Expected timeout 30s, got %v", options.Timeout)
-	}
+			AfterEach(func() {
+				slowServer.Close()
+			})
 
-	if !options.ExtractText {
-		t.Error("ExtractText should be true by default")
-	}
+			It("should timeout on slow responses", func() {
+				_, err := scraper.Scrape(ctx, slowServer.URL, options)
 
-	if !options.ExtractHTML {
-		t.Error("ExtractHTML should be true by default")
-	}
+				Expect(err).To(HaveOccurred())
+				assert.Contains(GinkgoT(), err.Error(), "timeout")
+			})
+		})
+	})
 
-	if !options.ExtractLinks {
-		t.Error("ExtractLinks should be true by default")
-	}
+	Describe("ScrapeMultiple", func() {
+		Context("when scraping multiple pages", func() {
+			var (
+				server1 *httptest.Server
+				server2 *httptest.Server
+			)
 
-	if !options.ExtractImages {
-		t.Error("ExtractImages should be true by default")
-	}
+			BeforeEach(func() {
+				server1 = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.Header().Set("Content-Type", "text/html")
+					w.WriteHeader(http.StatusOK)
+					w.Write([]byte("<html><head><title>Page 1</title></head><body><h1>Hello Page 1</h1></body></html>"))
+				}))
 
-	if !options.ExtractForms {
-		t.Error("ExtractForms should be true by default")
-	}
+				server2 = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.Header().Set("Content-Type", "text/html")
+					w.WriteHeader(http.StatusOK)
+					w.Write([]byte("<html><head><title>Page 2</title></head><body><h1>Hello Page 2</h1></body></html>"))
+				}))
 
-	if !options.ExtractScripts {
-		t.Error("ExtractScripts should be true by default")
-	}
+				options = &ScrapingOptions{
+					Timeout:         5 * time.Second,
+					UserAgent:       "Test-Bot/1.0",
+					RateLimitDelay:  100 * time.Millisecond,
+					ExtractText:     true,
+					ExtractHTML:     true,
+					ExtractLinks:    true,
+					ExtractImages:   true,
+					ExtractForms:    true,
+					ExtractScripts:  true,
+					ExtractMeta:     true,
+					FollowRedirects: true,
+				}
+			})
 
-	if !options.ExtractMeta {
-		t.Error("ExtractMeta should be true by default")
-	}
-}
+			AfterEach(func() {
+				server1.Close()
+				server2.Close()
+			})
 
-func TestCollyScraper_SetUserAgent(t *testing.T) {
-	scraper := NewCollyScraper()
-	customUA := "Custom-Bot/2.0"
+			It("should scrape multiple URLs successfully", func() {
+				urls := []string{server1.URL, server2.URL}
+				results, err := scraper.ScrapeMultiple(ctx, urls, options)
 
-	scraper.SetUserAgent(customUA)
+				Expect(err).ToNot(HaveOccurred())
+				assert.Len(GinkgoT(), results, 2)
+				assert.Equal(GinkgoT(), "Page 1", results[0].Title)
+				assert.Equal(GinkgoT(), "Page 2", results[1].Title)
+			})
+		})
+	})
 
-	if scraper.userAgent != customUA {
-		t.Errorf("Expected user agent '%s', got '%s'", customUA, scraper.userAgent)
-	}
-}
+	Describe("Scraping Options", func() {
+		Context("when using selective extraction options", func() {
+			var server *httptest.Server
 
-func TestCollyScraper_SetTimeout(t *testing.T) {
-	scraper := NewCollyScraper()
-	customTimeout := 45 * time.Second
+			BeforeEach(func() {
+				server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.Header().Set("Content-Type", "text/html")
+					w.WriteHeader(http.StatusOK)
+					w.Write([]byte(`
+						<html>
+							<head>
+								<title>Test Page</title>
+								<meta name="description" content="Test description">
+							</head>
+							<body>
+								<h1>Test Content</h1>
+								<a href="/link1">Link 1</a>
+								<img src="/image1.jpg" alt="Image 1">
+								<script src="/script1.js"></script>
+							</body>
+						</html>
+					`))
+				}))
 
-	scraper.SetTimeout(customTimeout)
+				options = &ScrapingOptions{
+					Timeout:         5 * time.Second,
+					UserAgent:       "Test-Bot/1.0",
+					ExtractText:     false,
+					ExtractHTML:     true,
+					ExtractLinks:    false,
+					ExtractImages:   false,
+					ExtractForms:    false,
+					ExtractScripts:  false,
+					ExtractMeta:     true,
+					FollowRedirects: true,
+				}
+			})
 
-	if scraper.timeout != customTimeout {
-		t.Errorf("Expected timeout %v, got %v", customTimeout, scraper.timeout)
-	}
-}
+			AfterEach(func() {
+				server.Close()
+			})
+
+			It("should extract only selected content types", func() {
+				result, err := scraper.Scrape(ctx, server.URL, options)
+				require.NoError(GinkgoT(), err)
+
+				assert.NotEmpty(GinkgoT(), result.HTMLBody, "HTMLBody should be extracted")
+				assert.NotEmpty(GinkgoT(), result.MetaTags, "MetaTags should be extracted")
+
+				assert.Empty(GinkgoT(), result.Text, "Text should not be extracted when ExtractText is false")
+				assert.Empty(GinkgoT(), result.Links, "Links should not be extracted when ExtractLinks is false")
+				assert.Empty(GinkgoT(), result.Images, "Images should not be extracted when ExtractImages is false")
+				assert.Empty(GinkgoT(), result.Scripts, "Scripts should not be extracted when ExtractScripts is false")
+			})
+		})
+	})
+
+	Describe("Default Options", func() {
+		It("should have correct default values", func() {
+			defaultOptions := DefaultScrapingOptions()
+
+			assert.Equal(GinkgoT(), 30*time.Second, defaultOptions.Timeout)
+			assert.True(GinkgoT(), defaultOptions.ExtractText)
+			assert.True(GinkgoT(), defaultOptions.ExtractHTML)
+			assert.True(GinkgoT(), defaultOptions.ExtractLinks)
+			assert.True(GinkgoT(), defaultOptions.ExtractImages)
+			assert.True(GinkgoT(), defaultOptions.ExtractForms)
+			assert.True(GinkgoT(), defaultOptions.ExtractScripts)
+			assert.True(GinkgoT(), defaultOptions.ExtractMeta)
+		})
+	})
+
+	Describe("Configuration", func() {
+		Describe("SetUserAgent", func() {
+			It("should set custom user agent", func() {
+				customUA := "Custom-Bot/2.0"
+				scraper.SetUserAgent(customUA)
+
+				assert.Equal(GinkgoT(), customUA, scraper.userAgent)
+			})
+		})
+
+		Describe("SetTimeout", func() {
+			It("should set custom timeout", func() {
+				customTimeout := 45 * time.Second
+				scraper.SetTimeout(customTimeout)
+
+				assert.Equal(GinkgoT(), customTimeout, scraper.timeout)
+			})
+		})
+	})
+})
