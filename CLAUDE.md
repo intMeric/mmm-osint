@@ -2,12 +2,13 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Developpement
+## Development
 
 - If you don't have all the information, ASK.
 - If you don't know, ASK.
 - No TODOs in the code, no unused functions
 - Comments must be in ENGLISH.
+- For each package that is intended to be used by others, always create interfaces. Make sure they are as SIMPLE as possible.
 - "Everything should be made as simple as possible, but not simpler. Nothing is more simple than greatness; indeed, to be simple is to be great" Albert Einstein
 
 ## Testing
@@ -15,11 +16,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - TEST-DRIVEN DEVELOPMENT IS NON-NEGOTIABLE.
 - Run all tests: `go test -v ./...`
 - Run specific package tests: `go test -v ./internal/app/web-page`
+- Run tests with coverage: `go test -v -cover ./...`
 - Tests use Ginkgo BDD framework with Testify assertions
 
 ## Building
 
 - Build all packages: `go build ./...`
+- Check for Go formatting issues: `go fmt ./...`
+- Check for common Go issues: `go vet ./...`
 - The project is structured as a library with no main executable
 
 ## Module Management
@@ -56,6 +60,13 @@ This is a Go-based OSINT (Open Source Intelligence) toolkit with a modular archi
 - Redis-based implementation for distributed queuing
 - Support for both fire-and-forget and request-reply messaging patterns
 
+**Keyword Extraction (`internal/pkg/keyword/`)**
+
+- Simple interface for extracting keywords from text
+- Prose library integration for natural language processing
+- Configurable options: minimum word length, maximum keywords, stop word filtering
+- Two extraction methods: simple string list or keywords with frequency scores
+
 ### Key Design Patterns
 
 - **Interface-driven design**: All major components define interfaces first
@@ -70,6 +81,7 @@ Key external dependencies:
 - `github.com/gocolly/colly/v2`: Web scraping framework
 - `github.com/redis/go-redis/v9`: Redis client for caching and queuing
 - `github.com/hashicorp/golang-lru/v2`: LRU cache implementation
+- `github.com/jdkato/prose/v2`: Natural language processing for keyword extraction
 - `github.com/onsi/ginkgo/v2` + `github.com/stretchr/testify`: BDD testing framework
 
 ### Testing Strategy
@@ -78,3 +90,14 @@ Key external dependencies:
 - Testify assertions for readable test expectations
 - Mock HTTP servers for web scraping tests
 - Test coverage includes timeout handling, error scenarios, and configuration options
+
+### Directory Structure
+
+- `cmd/`: Command-line executables (currently empty - library project)
+- `internal/app/`: Application-specific code
+  - `web-page/`: Web scraping functionality with Colly integration
+- `internal/pkg/`: Internal packages
+  - `cache/`: Generic caching interfaces and implementations
+  - `queue/`: Message queue interfaces and Redis implementations
+  - `keyword/`: Keyword extraction from text using prose library
+  - `env/`: Environment configuration utilities
