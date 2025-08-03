@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+YOUR MOTTO: "Everything should be made as simple as possible, but not simpler. Nothing is more simple than greatness; indeed, to be simple is to be great" **Albert Einstein**
+
+FOLLOW K.I.S.S principle
+
 ## Development
 
 - If you don't have all the information, ASK.
@@ -9,14 +13,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - No TODOs in the code, no unused functions
 - Comments must be in ENGLISH.
 - For each package that is intended to be used by others, always create interfaces. Make sure they are as SIMPLE as possible.
-- "Everything should be made as simple as possible, but not simpler. Nothing is more simple than greatness; indeed, to be simple is to be great" Albert Einstein
 
 ## Testing
 
 - TEST-DRIVEN DEVELOPMENT IS NON-NEGOTIABLE.
 - Run all tests: `go test -v ./...`
-- Run specific package tests: `go test -v ./internal/app/web-page`
+- Run specific package tests: `go test -v ./internal/pkg/cache`
 - Run tests with coverage: `go test -v -cover ./...`
+- Run tests for specific file: `go test -v ./internal/pkg/cache -run TestLRUCache`
 - Tests use Ginkgo BDD framework with Gomega assertions
 
 ### Test Example Structure
@@ -54,7 +58,7 @@ var _ = Describe("MyComponent", func() {
         Context("with valid input", func() {
             It("should return expected result", func() {
                 result, err := component.MethodName(ctx, "input")
-                
+
                 Expect(err).NotTo(HaveOccurred())
                 Expect(result).NotTo(BeEmpty())
                 Expect(result).To(ContainSubstring("expected"))
@@ -64,7 +68,7 @@ var _ = Describe("MyComponent", func() {
         Context("with invalid input", func() {
             It("should handle errors gracefully", func() {
                 result, err := component.MethodName(ctx, "")
-                
+
                 Expect(err).To(HaveOccurred())
                 Expect(result).To(BeEmpty())
             })
@@ -128,6 +132,15 @@ This is a Go-based OSINT (Open Source Intelligence) toolkit with a modular archi
 - Built on intMeric/pii-extractor library
 - Returns structured results with entity types, values, counts, and contexts
 
+**Graph Database (`internal/pkg/graph/`)**
+
+- Interface for graph database operations with Neo4j implementation
+- Typed nodes (URL, User) with validation for displayName and ID fields
+- Separate concerns: Neo4j stores relationships, MongoDB stores data
+- Methods: CreateNode, CreateRelation, GetNode, NodeExists, Close
+- Connection pooling and automatic reconnection handling
+- Factory pattern for graph instantiation with environment variable configuration
+
 ### Key Design Patterns
 
 - **Interface-driven design**: All major components define interfaces first
@@ -145,6 +158,7 @@ Key external dependencies:
 - `github.com/jdkato/prose/v2`: Natural language processing for keyword extraction
 - `github.com/intMeric/pii-extractor`: PII detection and extraction
 - `github.com/onsi/ginkgo/v2` + `github.com/onsi/gomega`: BDD testing framework
+- `github.com/neo4j/neo4j-go-driver/v5`: Neo4j database driver for graph operations
 
 ### Testing Strategy
 
@@ -163,4 +177,5 @@ Key external dependencies:
   - `queue/`: Message queue interfaces and Redis implementations
   - `keyword/`: Keyword extraction from text using prose library
   - `pii/`: PII extraction using intMeric/pii-extractor library
-  - `env/`: Environment configuration utilities
+  - `env/`: Environment configuration utilities (hostname, env vars with defaults)
+  - `graph/`: Graph database interfaces and Neo4j implementation with typed nodes (URL, User) and strict validation

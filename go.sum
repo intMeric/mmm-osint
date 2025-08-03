@@ -97,6 +97,8 @@ github.com/mailru/easyjson v0.9.0/go.mod h1:1+xMtQp2MRNVL/V1bOzuP3aP8VNwRW55fQUt
 github.com/mingrammer/commonregex v1.0.1 h1:QY0Z1Bl80jw9M3+488HJXPWnZmvtu3UdvxyodP2FTyY=
 github.com/mingrammer/commonregex v1.0.1/go.mod h1:/HNZq7qReKgXBxJxce5SOxf33y0il/ZqL4Kxgo2NLcA=
 github.com/montanaflynn/stats v0.6.3/go.mod h1:wL8QJuTMNUDYhXwkmfOly8iTdp5TEcJFWZD2D7SIkUc=
+github.com/neo4j/neo4j-go-driver/v5 v5.28.1 h1:RKWQW7wTgYAY2fU9S+9LaJ9OwRPbRc0I17tlT7nDmAY=
+github.com/neo4j/neo4j-go-driver/v5 v5.28.1/go.mod h1:Vff8OwT7QpLm7L2yYr85XNWe9Rbqlbeb9asNXJTHO4k=
 github.com/neurosnap/sentences v1.0.6 h1:iBVUivNtlwGkYsJblWV8GGVFmXzZzak907Ci8aA0VTE=
 github.com/neurosnap/sentences v1.0.6/go.mod h1:pg1IapvYpWCJJm/Etxeh0+gtMf1rI1STY9S7eUCPbDc=
 github.com/nlnwa/whatwg-url v0.6.1 h1:Zlefa3aglQFHF/jku45VxbEJwPicDnOz64Ra3F7npqQ=

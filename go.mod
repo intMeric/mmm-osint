@@ -45,6 +45,7 @@ require (
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/mailru/easyjson v0.9.0 // indirect
 	github.com/mingrammer/commonregex v1.0.1 // indirect
+	github.com/neo4j/neo4j-go-driver/v5 v5.28.1 // indirect
 	github.com/nlnwa/whatwg-url v0.6.1 // indirect
 	github.com/pkoukk/tiktoken-go v0.1.7 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
