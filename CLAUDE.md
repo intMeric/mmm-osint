@@ -67,6 +67,13 @@ This is a Go-based OSINT (Open Source Intelligence) toolkit with a modular archi
 - Configurable options: minimum word length, maximum keywords, stop word filtering
 - Two extraction methods: simple string list or keywords with frequency scores
 
+**PII Extraction (`internal/pkg/pii/`)**
+
+- Simple interface for extracting Personally Identifiable Information from text
+- Regex-based detection of emails, phones, credit cards, SSNs, IP addresses, IBANs
+- Built on intMeric/pii-extractor library
+- Returns structured results with entity types, values, counts, and contexts
+
 ### Key Design Patterns
 
 - **Interface-driven design**: All major components define interfaces first
@@ -82,6 +89,7 @@ Key external dependencies:
 - `github.com/redis/go-redis/v9`: Redis client for caching and queuing
 - `github.com/hashicorp/golang-lru/v2`: LRU cache implementation
 - `github.com/jdkato/prose/v2`: Natural language processing for keyword extraction
+- `github.com/intMeric/pii-extractor`: PII detection and extraction
 - `github.com/onsi/ginkgo/v2` + `github.com/stretchr/testify`: BDD testing framework
 
 ### Testing Strategy
@@ -100,4 +108,5 @@ Key external dependencies:
   - `cache/`: Generic caching interfaces and implementations
   - `queue/`: Message queue interfaces and Redis implementations
   - `keyword/`: Keyword extraction from text using prose library
+  - `pii/`: PII extraction using intMeric/pii-extractor library
   - `env/`: Environment configuration utilities
