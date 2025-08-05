@@ -97,7 +97,7 @@ This is a Go-based OSINT (Open Source Intelligence) toolkit with a modular archi
 
 ### Core Components
 
-**Web Scraping (`internal/app/web-page/`)**
+**Web Scraping (`internal/pkg/web-page/`)**
 
 - Main interface: `WebScraper` with implementations using Colly framework
 - Supports comprehensive data extraction: HTML, text, links, images, forms, scripts, meta tags
@@ -171,8 +171,10 @@ Key external dependencies:
 
 - `cmd/`: Command-line executables (currently empty - library project)
 - `internal/app/`: Application-specific code
+  - `services/`: Business logic services (future: OSINT-specific orchestration)
+  - `usecases/`: Use cases and business workflows (future: investigation workflows)
+- `internal/pkg/`: Reusable internal packages
   - `web-page/`: Web scraping functionality with Colly integration
-- `internal/pkg/`: Internal packages
   - `cache/`: Generic caching interfaces and implementations
   - `queue/`: Message queue interfaces and Redis implementations
   - `keyword/`: Keyword extraction from text using prose library
