@@ -171,8 +171,7 @@ Key external dependencies:
 
 - `cmd/`: Command-line executables (currently empty - library project)
 - `internal/app/`: Application-specific code
-  - `services/`: Business logic services (future: OSINT-specific orchestration)
-  - `usecases/`: Use cases and business workflows (future: investigation workflows)
+  - `usecases/`: Use cases and business workflows (contains `analyse_web_page.go` - currently empty, future: investigation workflows)
 - `internal/pkg/`: Reusable internal packages
   - `web-page/`: Web scraping functionality with Colly integration
   - `cache/`: Generic caching interfaces and implementations
